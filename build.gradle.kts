@@ -2,7 +2,7 @@ plugins {
     kotlin("multiplatform") version "1.7.0"
 }
 
-group = "com.tomuvak.<replace with project name>"
+group = "com.tomuvak.testing-assertions"
 version = "0.0.1-SNAPSHOT"
 
 repositories {
@@ -35,7 +35,6 @@ kotlin {
         else -> throw GradleException("Host OS is not supported in Kotlin/Native.")
     }
 
-    
     sourceSets {
         val commonMain by getting
         val commonTest by getting {

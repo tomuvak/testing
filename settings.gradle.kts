@@ -1,3 +1,3 @@
 
-rootProject.name = "<replace with project name>"
+rootProject.name = "testing-assertions"
 
