@@ -107,6 +107,90 @@ class SequencesTest {
         thenFailsWith(2) { sequenceOf(1, 2, 3).assertValues(1, 2) }
     }
 
+    @Test fun testIntermediateOperationFailsWhenOperationFails() {
+        val operationFailure = Exception("Failure in operation itself")
+        val failure = assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testIntermediateOperation<_, String>({ throw operationFailure }) {}
+        }
+        assertSame(operationFailure, failure.cause)
+        failure.assertMessageContains("operation failed")
+    }
+
+    @Test fun testIntermediateOperationFailsWhenTestFails() {
+        val testFailure = Exception("Failure in test")
+        val failure = assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testIntermediateOperation({ this }) { throw testFailure }
+        }
+        assertSame(testFailure, failure.cause)
+        failure.assertMessageContains("failed to pass the test")
+    }
+
+    @Test fun testIntermediateOperationFailsWhenTestFailsOnSecondIteration() {
+        var secondTestFailure: Throwable? = null
+        val failure = assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testIntermediateOperation({ this }) {
+                if (secondTestFailure == null) secondTestFailure = Exception("Second iteration failure")
+                else throw secondTestFailure!!
+            }
+        }
+        assertSame(secondTestFailure, failure.cause)
+        failure.assertMessageContains("on second iteration")
+    }
+
+    @Test fun testIntermediateOperationsFailsWhenOperationFailsOnConstrainedOnceSequence() {
+        val failure = assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testIntermediateOperation({
+                repeat(2) { iterator() }
+                this
+            }) {}
+        }
+        val illegalStateException = assertIs<IllegalStateException>(failure.cause)
+        assertEquals("This sequence can be consumed only once.", illegalStateException.message)
+        failure.assertMessageContains("operation failed", "constrained-once")
+    }
+
+    @Test fun testIntermediateOperationFailsWhenTestFailsOnConstrainedOnceSequence() {
+        val failure = assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testIntermediateOperation({ this }) {
+                repeat(2) { iterator() }
+            }
+        }
+        val illegalStateException = assertIs<IllegalStateException>(failure.cause)
+        assertEquals("This sequence can be consumed only once.", illegalStateException.message)
+        failure.assertMessageContains("failed to pass the test", "constrained-once")
+    }
+
+    @Test fun testIntermediateOperationFailsWhenResultOfConstrainedOnceSequenceIsReiterable() =
+        assertFailsWithTypeAndMessageContaining<AssertionError>("reiterable") {
+            sequenceOf(1, 2, 3).testIntermediateOperation({ sequenceOf(4, 5, 6) }) {}
+        }
+
+    @Test fun testIntermediateOperationTestsAndPasses() {
+        val originalSequence = sequence { yieldAll(listOf(1, 2, 3)) }
+        val result = sequence { yieldAll(listOf("one", "two", "three")) }
+        val constrainedOnceResult = sequenceOf("constrained", "once").constrainOnce()
+        var numOperationIterations = 0
+        var numTestIterations = 0
+        originalSequence.testIntermediateOperation({
+            if (numOperationIterations++ < 1) {
+                assertSame(originalSequence, this)
+                result
+            } else {
+                assertValues(1, 2, 3)
+                assertFailsWith<IllegalStateException> { iterator() }
+                constrainedOnceResult
+            }
+        }) {
+            if (numTestIterations++ < 2) assertSame(result, this)
+            else {
+                assertSame(constrainedOnceResult, this)
+                iterator() // an actual test would iterate over the result (preventing reiteration if constrained-once)
+            }
+        }
+        assertEquals(2, numOperationIterations)
+        assertEquals(3, numTestIterations)
+    }
+
     private fun thenFailsWith(vararg messageParts: Any?, block: () -> Unit) =
         assertFailsWithTypeAndMessageContaining<AssertionError>(*messageParts, block=block)
 }
