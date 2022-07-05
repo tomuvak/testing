@@ -311,8 +311,6 @@ class InequalitiesTest {
             thenFailsWith("msg", "greater than or equal to $j", i) { assertGreaterThanOrEqualTo(j, i, "msg") }
     }
 
-    private fun thenFailsWith(vararg texts: Any, block: () -> Unit) {
-        val failure = assertFailsWith<AssertionError>(block=block)
-        for (text in texts) assertTrue(failure.message!!.indexOf(text.toString()) >= 0)
-    }
+    private fun thenFailsWith(vararg texts: Any, block: () -> Unit) =
+        assertFailsWithTypeAndMessageContaining<AssertionError>(*texts, block=block)
 }
