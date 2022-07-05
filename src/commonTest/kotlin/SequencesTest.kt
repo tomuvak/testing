@@ -45,17 +45,17 @@ class SequencesTest {
     }
 
     @Test fun assertStartsWithFailsWhenWrongValue() {
-        assertFailsWithMessageContaining("index 0", 2, 1) { sequenceOf(1).assertStartsWith(2) }
-        assertFailsWithMessageContaining("index 0", 2, 1) { sequenceOf(1, 2).assertStartsWith(2) }
-        assertFailsWithMessageContaining("index 1", 2, 3) { sequenceOf(2, 3).assertStartsWith(2, 2) }
-        assertFailsWithMessageContaining("index 0", 2, 1) { sequenceOf(1, 2).assertStartsWith(2, 1) }
-        assertFailsWithMessageContaining("index 0", 2, 1) { sequenceOf(1, 2).assertStartsWith(2, 2) }
+        thenFailsWith("index 0", 2, 1) { sequenceOf(1).assertStartsWith(2) }
+        thenFailsWith("index 0", 2, 1) { sequenceOf(1, 2).assertStartsWith(2) }
+        thenFailsWith("index 1", 2, 3) { sequenceOf(2, 3).assertStartsWith(2, 2) }
+        thenFailsWith("index 0", 2, 1) { sequenceOf(1, 2).assertStartsWith(2, 1) }
+        thenFailsWith("index 0", 2, 1) { sequenceOf(1, 2).assertStartsWith(2, 2) }
     }
 
     @Test fun assertStartsWithFailsWhenSequenceExhausted() {
-        assertFailsWithMessageContaining(0, 2) { emptySequence<Int>().assertStartsWith(2) }
-        assertFailsWithMessageContaining(1, 3) { sequenceOf(2).assertStartsWith(2, 3) }
-        assertFailsWithMessageContaining(2, 5) { sequenceOf(3, 4).assertStartsWith(3, 4, 5) }
+        thenFailsWith(0, 2) { emptySequence<Int>().assertStartsWith(2) }
+        thenFailsWith(1, 3) { sequenceOf(2).assertStartsWith(2, 3) }
+        thenFailsWith(2, 5) { sequenceOf(3, 4).assertStartsWith(3, 4, 5) }
     }
 
     @Test fun assertValuesSucceeds() {
@@ -85,25 +85,28 @@ class SequencesTest {
     }
 
     @Test fun assertValuesFailsWhenWrongValue() {
-        assertFailsWithMessageContaining("index 0", 2, 1) { sequenceOf(1).assertValues(2) }
-        assertFailsWithMessageContaining("index 0", 2, 1) { sequenceOf(1, 2).assertValues(2) }
-        assertFailsWithMessageContaining("index 1", 2, 3) { sequenceOf(2, 3).assertValues(2, 2) }
-        assertFailsWithMessageContaining("index 0", 2, 1) { sequenceOf(1, 2).assertValues(2, 1) }
-        assertFailsWithMessageContaining("index 0", 2, 1) { sequenceOf(1, 2).assertValues(2, 2) }
+        thenFailsWith("index 0", 2, 1) { sequenceOf(1).assertValues(2) }
+        thenFailsWith("index 0", 2, 1) { sequenceOf(1, 2).assertValues(2) }
+        thenFailsWith("index 1", 2, 3) { sequenceOf(2, 3).assertValues(2, 2) }
+        thenFailsWith("index 0", 2, 1) { sequenceOf(1, 2).assertValues(2, 1) }
+        thenFailsWith("index 0", 2, 1) { sequenceOf(1, 2).assertValues(2, 2) }
     }
 
     @Test fun assertValuesFailsWhenSequenceExhausted() {
-        assertFailsWithMessageContaining(0, 2) { emptySequence<Int>().assertValues(2) }
-        assertFailsWithMessageContaining(1, 3) { sequenceOf(2).assertValues(2, 3) }
-        assertFailsWithMessageContaining(2, 5) { sequenceOf(3, 4).assertValues(3, 4, 5) }
+        thenFailsWith(0, 2) { emptySequence<Int>().assertValues(2) }
+        thenFailsWith(1, 3) { sequenceOf(2).assertValues(2, 3) }
+        thenFailsWith(2, 5) { sequenceOf(3, 4).assertValues(3, 4, 5) }
     }
 
     @Test fun assertValuesFailsWhenSequenceNotExhausted() {
-        assertFailsWithMessageContaining(0) { sequenceOf(1).assertValues() }
-        assertFailsWithMessageContaining(0) { sequenceOf(1, 2).assertValues() }
-        assertFailsWithMessageContaining(1) { sequenceOf(1, 2).assertValues(1) }
-        assertFailsWithMessageContaining(0) { sequenceOf(1, 2, 3).assertValues() }
-        assertFailsWithMessageContaining(1) { sequenceOf(1, 2, 3).assertValues(1) }
-        assertFailsWithMessageContaining(2) { sequenceOf(1, 2, 3).assertValues(1, 2) }
+        thenFailsWith(0) { sequenceOf(1).assertValues() }
+        thenFailsWith(0) { sequenceOf(1, 2).assertValues() }
+        thenFailsWith(1) { sequenceOf(1, 2).assertValues(1) }
+        thenFailsWith(0) { sequenceOf(1, 2, 3).assertValues() }
+        thenFailsWith(1) { sequenceOf(1, 2, 3).assertValues(1) }
+        thenFailsWith(2) { sequenceOf(1, 2, 3).assertValues(1, 2) }
     }
+
+    private fun thenFailsWith(vararg messageParts: Any?, block: () -> Unit) =
+        assertFailsWithTypeAndMessageContaining<AssertionError>(*messageParts, block=block)
 }
