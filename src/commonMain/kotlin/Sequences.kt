@@ -10,3 +10,9 @@ fun <T> Sequence<T>.assertStartsWith(vararg expectedValues: T) {
         assertEquals(value, iterator.next(), "Wrong element at index $index")
     }
 }
+
+fun <T> Sequence<T>.assertValues(vararg expectedValues: T) {
+    val iterator = iterator()
+    iterator.asSequence().assertStartsWith(*expectedValues)
+    if (iterator.hasNext()) fail("Expected sequence with ${expectedValues.size} elements, got more")
+}
