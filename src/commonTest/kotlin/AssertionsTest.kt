@@ -312,8 +312,7 @@ class AssertionsTest {
     }
 
     private fun thenFailsWith(vararg texts: Any, block: () -> Unit) {
-        val failure = assertFails(block)
-        assertIs<AssertionError>(failure)
+        val failure = assertFailsWith<AssertionError>(block=block)
         for (text in texts) assertTrue(failure.message!!.indexOf(text.toString()) >= 0)
     }
 }
