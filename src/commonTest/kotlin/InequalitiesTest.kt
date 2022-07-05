@@ -2,7 +2,7 @@ package com.tomuvak.testing.assertions
 
 import kotlin.test.*
 
-class AssertionsTest {
+class InequalitiesTest {
     companion object {
         private val bytes: List<Byte> =
             listOf(Byte.MIN_VALUE, -100, -10, -5, -3, -2, -1, 0, 1, 2, 3, 5, 10, 100, Byte.MAX_VALUE)
