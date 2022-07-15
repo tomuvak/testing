@@ -90,7 +90,7 @@ class SequencesTest {
         thenFailsWith("index 0", 2, 1) { sequenceOf(1, 2).assertValues(2, 2) }
     }
 
-    @Test fun assertValuesFailsWhenSequenceExhausted() {
+    @Test fun assertValuesFailsWhenSequenceExhaustedTooSoon() {
         thenFailsWith(0, 2) { emptySequence<Int>().assertValues(2) }
         thenFailsWith(1, 3) { sequenceOf(2).assertValues(2, 3) }
         thenFailsWith(2, 5) { sequenceOf(3, 4).assertValues(3, 4, 5) }
