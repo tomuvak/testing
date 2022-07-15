@@ -16,9 +16,7 @@ class SequencesTest {
         val failure = Exception("Should fail with this specific exception")
         assertSame(
             failure,
-            assertFails {
-                (object : Sequence<Int> { override fun iterator(): Iterator<Int> = throw failure }).assertStartsWith()
-            }
+            assertFails { Sequence<Int> { throw failure }.assertStartsWith() }
         )
     }
 
