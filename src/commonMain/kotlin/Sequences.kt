@@ -4,6 +4,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.fail
 
+/**
+ * Asserts that the receiver sequence [this] starts with the given [expectedValues] (in the order given). No assertions
+ * are made regarding how the sequence continues after the given expected elements. Calling this function without
+ * arguments makes no assertions about the sequence's elements, but does assert the sequence produces an iterator on
+ * demand.
+ */
 fun <T> Sequence<T>.assertStartsWith(vararg expectedValues: T) {
     val iterator = iterator()
     for ((index, value) in expectedValues.withIndex()) {
@@ -12,6 +18,11 @@ fun <T> Sequence<T>.assertStartsWith(vararg expectedValues: T) {
     }
 }
 
+/**
+ * Asserts that the receiver sequence [this] contains exactly the given [expectedValues] (no less, no more, in the order
+ * given). In particular, calling this function with a single argument asserts the sequence is a singleton, and calling
+ * it without arguments asserts the sequence is empty.
+ */
 fun <T> Sequence<T>.assertValues(vararg expectedValues: T) {
     val iterator = iterator()
     iterator.asSequence().assertStartsWith(*expectedValues)
