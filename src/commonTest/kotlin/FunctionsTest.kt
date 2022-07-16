@@ -4,7 +4,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class FunctionsTest {
-    @Test fun mootFunction() =
+    @Test fun mootProviderFails() =
+        assertFailsWithTypeAndMessageContaining<AssertionError>("ot supposed", "be called") { mootProvider() }
+
+    @Test fun mootFunctionFails() =
         assertFailsWithTypeAndMessageContaining<AssertionError>("ot supposed", "be called") { mootFunction(Unit) }
 
     @Test fun mockFunction() {
