@@ -1,6 +1,6 @@
 package com.tomuvak.testing.assertions
 
-import kotlin.test.DefaultAsserter.fail
+import kotlin.test.fail
 
 /**
  * A predicate which asserts it's never actually called.
