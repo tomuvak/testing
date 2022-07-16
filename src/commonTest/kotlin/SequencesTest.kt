@@ -189,6 +189,165 @@ class SequencesTest {
         assertEquals(3, numTestIterations)
     }
 
+    @Test fun testLazyIntermediateOperationFailsWhenOperationFails() {
+        val operationFailure = Exception("Failure in operation itself")
+        val failure = assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testLazyIntermediateOperation<_, String>({ throw operationFailure }) {}
+        }
+        assertSame(operationFailure, failure.cause)
+        failure.assertMessageContains("operation failed")
+    }
+
+    @Test fun testLazyIntermediateOperationFailsWhenTestFails() {
+        val testFailure = Exception("Failure in test")
+        val failure = assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testLazyIntermediateOperation({ this }) { throw testFailure }
+        }
+        assertSame(testFailure, failure.cause)
+        failure.assertMessageContains("failed to pass the test")
+    }
+
+    @Test fun testLazyIntermediateOperationFailsWhenTestFailsOnSecondIteration() {
+        var secondTestFailure: Throwable? = null
+        val failure = assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testLazyIntermediateOperation({ this }) {
+                if (secondTestFailure == null) secondTestFailure = Exception("Second iteration failure")
+                else throw secondTestFailure!!
+            }
+        }
+        assertSame(secondTestFailure, failure.cause)
+        failure.assertMessageContains("on second iteration")
+    }
+
+    @Test fun testLazyIntermediateOperationsFailsWhenOperationFailsOnConstrainedOnceSequence() {
+        val failure = assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testLazyIntermediateOperation({
+                repeat(2) { iterator() }
+                this
+            }) {}
+        }
+        val illegalStateException = assertIs<IllegalStateException>(failure.cause)
+        assertEquals("This sequence can be consumed only once.", illegalStateException.message)
+        failure.assertMessageContains("operation failed", "constrained-once")
+    }
+
+    @Test fun testLazyIntermediateOperationFailsWhenTestFailsOnConstrainedOnceSequence() {
+        val failure = assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testLazyIntermediateOperation({ this }) {
+                repeat(2) { iterator() }
+            }
+        }
+        val illegalStateException = assertIs<IllegalStateException>(failure.cause)
+        assertEquals("This sequence can be consumed only once.", illegalStateException.message)
+        failure.assertMessageContains("failed to pass the test", "constrained-once")
+    }
+
+    @Test fun testLazyIntermediateOperationFailsWhenResultOfConstrainedOnceSequenceIsReiterable() =
+        assertFailsWithTypeAndMessageContaining<AssertionError>("reiterable") {
+            sequenceOf(1, 2, 3).testLazyIntermediateOperation({ sequenceOf(4, 5, 6) }) {}
+        }
+
+    @Test fun testLazyIntermediateOperationTestsAndPasses() {
+        val originalSequence = sequenceOf(1, 2, 3)
+        val result = sequence { yieldAll(listOf("one", "two", "three")) }
+        val constrainedOnceResult = sequenceOf("constrained", "once").constrainOnce()
+        var numOperationIterations = 0
+        var numTestIterations = 0
+        originalSequence.testLazyIntermediateOperation({
+            val iterator = iterator()
+            iterator.asSequence().assertStartsWith(1, 2, 3)
+            assertFailsWith<AssertionError> { iterator.next() }
+            if (numOperationIterations++ < 1) {
+                result
+            } else {
+                assertFailsWith<IllegalStateException> { iterator() }
+                constrainedOnceResult
+            }
+        }) {
+            if (numTestIterations++ < 2) assertSame(result, this)
+            else {
+                assertSame(constrainedOnceResult, this)
+                iterator() // an actual test would iterate over the result (preventing reiteration if constrained-once)
+            }
+        }
+        assertEquals(2, numOperationIterations)
+        assertEquals(3, numTestIterations)
+    }
+
+    @Test fun testTerminalOperationFailsWhenOperationFails() {
+        val operationFailure = Exception("Failure in operation itself")
+        val failure = assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testTerminalOperation({ throw operationFailure })
+        }
+        assertSame(operationFailure, failure.cause)
+        failure.assertMessageContains("operation failed")
+    }
+
+    @Test fun testTerminalOperationFailsWhenTestFails() {
+        val testFailure = Exception("Failure in test")
+        val failure = assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testTerminalOperation({}) { throw testFailure }
+        }
+        assertSame(testFailure, failure.cause)
+        failure.assertMessageContains("failed to pass the test")
+    }
+
+    @Test fun testTerminalOperationTestsAndPasses() {
+        val originalSequence = sequenceOf(1, 2, 3)
+        val result = "result"
+        var numOperationIterations = 0
+        var numTestIterations = 0
+        originalSequence.testTerminalOperation({
+            assertValues(1, 2, 3)
+            assertFailsWith<IllegalStateException> { iterator() }
+            numOperationIterations++
+            result
+        }) {
+            assertEquals(result, it)
+            numTestIterations++
+        }
+        assertEquals(1, numOperationIterations)
+        assertEquals(1, numTestIterations)
+    }
+
+    @Test fun testLazyTerminalOperationFailsWhenOperationFails() {
+        val operationFailure = Exception("Failure in operation itself")
+        val failure = assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testLazyTerminalOperation({ throw operationFailure })
+        }
+        assertSame(operationFailure, failure.cause)
+        failure.assertMessageContains("operation failed")
+    }
+
+    @Test fun testLazyTerminalOperationFailsWhenTestFails() {
+        val testFailure = Exception("Failure in test")
+        val failure = assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testLazyTerminalOperation({}) { throw testFailure }
+        }
+        assertSame(testFailure, failure.cause)
+        failure.assertMessageContains("failed to pass the test")
+    }
+
+    @Test fun testLazyTerminalOperationTestsAndPasses() {
+        val originalSequence = sequenceOf(1, 2, 3)
+        val result = "result"
+        var numOperationIterations = 0
+        var numTestIterations = 0
+        originalSequence.testLazyTerminalOperation({
+            val iterator = iterator()
+            iterator.asSequence().assertStartsWith(1, 2, 3)
+            assertFailsWithTypeAndMessageContaining<AssertionError>("enumerated thus far") { iterator.next() }
+            assertFailsWith<IllegalStateException> { iterator() }
+            numOperationIterations++
+            result
+        }) {
+            assertEquals(result, it)
+            numTestIterations++
+        }
+        assertEquals(1, numOperationIterations)
+        assertEquals(1, numTestIterations)
+    }
+
     private fun thenFailsWith(vararg messageParts: Any?, block: () -> Unit) =
         assertFailsWithTypeAndMessageContaining<AssertionError>(*messageParts, block=block)
 }

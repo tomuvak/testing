@@ -40,7 +40,8 @@ fun <T> Sequence<T>.assertValues(vararg expectedValues: T) {
  *
  * This function is useful for testing "intermediate" operations on sequences, but note that it does NOT verify that the
  * given "intermediate" [operation] enumerates the receiver sequence [this] lazily (verifying that depends on the
- * specific nature of the [operation] and should be done separately on a case-by-case basis).
+ * specific nature of the [operation] and should be done separately on a case-by-case basis; for some cases
+ * [testLazyIntermediateOperation] might be suitable).
  */
 fun <T, R> Sequence<T>.testIntermediateOperation(
     operation: Sequence<T>.() -> Sequence<R>,
@@ -60,4 +61,63 @@ fun <T, R> Sequence<T>.testIntermediateOperation(
     assertFailsWith<IllegalStateException>(
         "The operation on a constrained-once sequence yields a seemingly reiterable sequence"
     ) { constrainedOnce.iterator() }
+}
+
+/**
+ * Verifies that the sequence obtained by running the given "intermediate" [operation] passes the given [test] block,
+ * and also that at no point is the receiver sequence [this] enumerated to exhaustion (i.e. it's possible that its last
+ * element is retrieved, but no attempt is made by the [operation] and/or the [test] to retrieve further elements or to
+ * verify that that's the end of the sequence).
+ *
+ * Also verifies (non-)reiterability is preserved. Specifically, the receiver sequence [this] is expected to be
+ * reiterable, and this function also verifies that:
+ * 1. The sequence obtained by [operation] is also reiterable, and passes the given [test] a second time as well, and
+ * 2. The result of running [operation] on the [constrainOnce] version of [this] also passes the given [test], and is
+ * itself also not reiterable.
+ *
+ * This function is useful for testing "intermediate" operations on sequences, and also, in some cases, and unlike
+ * [testIntermediateOperation], that the tested operations enumerate the receiver sequence [this] lazily (specifically
+ * that no attempt is made to enumerate the sequence past the last given element; some tests might require finer
+ * granularity, and should be crafted on a case-by-case basis).
+ */
+fun <T, R> Sequence<T>.testLazyIntermediateOperation(
+    operation: Sequence<T>.() -> Sequence<R>,
+    test: Sequence<R>.() -> Unit
+) = capEnumeration().testIntermediateOperation(operation, test)
+
+/**
+ * Verifies that the result obtained by running the given "terminal" [operation] passes the given [test] block and that
+ * the receiver sequence [this] is not enumerated more than once in the process.
+ *
+ * The separation between [operation] and [test] is rather superficial; "testing" might, and, in fact, sometimes has to,
+ * be done as part of [operation], e.g. when the aim of the test is to verify that the operation fails.
+ *
+ * This function does not verify that the given [operation] enumerates the receiver sequence [this] lazily (verifying
+ * that depends on the specific nature of the [operation] and should be done separately on a case-by-case basis; for
+ * some cases [testLazyTerminalOperation] might be suitable).
+ */
+fun <T, R> Sequence<T>.testTerminalOperation(operation: Sequence<T>.() -> R, test: (R) -> Unit = {}) {
+    val result = try { constrainOnce().operation() } catch (e: Throwable) { fail("The operation failed", e) }
+    try { test(result) } catch (e: Throwable) { fail("The result failed to pass the test", e) }
+}
+
+/**
+ * Verifies that the result obtained by running the given "terminal" [operation] passes the given [test] block, and that
+ * the receiver sequence [this] is neither enumerated more than once in the process, nor enumerated to exhaustion (i.e.
+ * it's possible that its last element is retrieved, but no attempt is made by the [operation] and/or the [test] to
+ * retrieve further elements or to verify that that's the end of the sequence).
+ *
+ * The separation between [operation] and [test] is rather superficial; "testing" might, and, in fact, sometimes has to,
+ * be done as part of [operation], e.g. when the aim of the test is to verify that the operation fails.
+ *
+ * Unlike [testTerminalOperation], this function is useful for verifying that operations on sequences are performed
+ * lazily in some sense (specifically that no attempt is made to enumerate the sequence past the last given element;
+ * some tests might require finer granularity, and should be crafted on a case-by-case basis).
+ */
+fun <T, R> Sequence<T>.testLazyTerminalOperation(operation: Sequence<T>.() -> R, test: (R) -> Unit = {}) =
+    capEnumeration().testTerminalOperation(operation, test)
+
+private fun <T> Sequence<T>.capEnumeration(): Sequence<T> = sequence {
+    yieldAll(this@capEnumeration)
+    fail("Not supposed to be enumerated thus far")
 }
