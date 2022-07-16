@@ -14,6 +14,24 @@ val mootProvider: () -> Nothing = { fail("Not supposed to actually be called") }
 val mootFunction: (Any?) -> Nothing = { fail("Not supposed to actually be called") }
 
 /**
+ * Returns a function which yields the [scriptedReturnValues], in order, in successive invocations, and throws if called
+ * again after all [scriptedReturnValues] have been exhausted.
+ *
+ * For example, the function returned from `scriptedProvider(1, 4, 1)` will:
+ * * return `1` when called for the first time;
+ * * return `4` when called for the second time;
+ * * return `1` when called for the third time;
+ * * throw whenever called again after that.
+ */
+fun <TOutput> scriptedProvider(vararg scriptedReturnValues: TOutput): () -> TOutput {
+    var numCalls = 0
+    return {
+        if (numCalls >= scriptedReturnValues.size) fail("Unexpected call to exhausted scripted provider")
+        scriptedReturnValues[numCalls++]
+    }
+}
+
+/**
  * Returns a function which only executes successfully when it receives as argument the first components of
  * [scriptedCalls], in order, in successive calls, and which returns the second components of [scriptedCalls], in order,
  * in successive calls. In particular, the returned function cannot execute successfully more times than the number of

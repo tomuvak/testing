@@ -8,6 +8,27 @@ class FunctionsTest {
 
     @Test fun mootFunctionFails() = thenFailsWith("ot supposed", "be called") { mootFunction(Unit) }
 
+    @Test fun scriptedProviderObeysScript() {
+        val f1 = scriptedProvider("xy")
+        assertEquals("xy", f1())
+
+        val f2 = scriptedProvider("xyz", "", "gfdsa")
+        assertEquals("xyz", f2())
+        assertEquals("", f2())
+        assertEquals("gfdsa", f2())
+    }
+    @Test fun scriptedProviderFailsWhenScriptExhausted() {
+        val f1 = scriptedProvider("xy")
+        f1()
+        thenFailsWith("Unexpected call", "exhausted") { f1() }
+
+        val f2 = scriptedProvider("xyz", "", "gfdsa")
+        f2()
+        f2()
+        f2()
+        thenFailsWith("Unexpected call", "exhausted") { f2() }
+    }
+
     @Test fun scriptedFunctionObeysScript() {
         val f1 = scriptedFunction(2 to "xy")
         assertEquals("xy", f1(2))
