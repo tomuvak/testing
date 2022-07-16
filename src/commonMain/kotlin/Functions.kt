@@ -1,5 +1,6 @@
 package com.tomuvak.testing.assertions
 
+import kotlin.test.assertEquals
 import kotlin.test.fail
 
 /**
@@ -11,6 +12,32 @@ val mootProvider: () -> Nothing = { fail("Not supposed to actually be called") }
  * A unary function which asserts it's never actually called.
  */
 val mootFunction: (Any?) -> Nothing = { fail("Not supposed to actually be called") }
+
+/**
+ * Returns a function which only executes successfully when it receives as argument the first components of
+ * [scriptedCalls], in order, in successive calls, and which returns the second components of [scriptedCalls], in order,
+ * in successive calls. In particular, the returned function cannot execute successfully more times than the number of
+ * elements in [scriptedCalls].
+ *
+ * For example, the function returned from `scriptedFunction(1 to "x", 3 to "yz", 1 to "")` will:
+ * * throw when called for the first time, unless the argument passed is `1`, in which case it will return `"x"`;
+ * * throw when called for the second time, unless the argument passed is `3`, in which case it will return `"xy"`;
+ * * throw when called for the third time, unless the argument passed is `1`, in which case it will return `""`;
+ * * throw when called for the fourth time, whatever the argument passed.
+ *
+ * Note: each step above assumes the previous steps all completed successfully; once the function throws the behavior in
+ * further invocations is unspecified (this should not normally happen: the idea is that the function is used in some
+ * test, which should normally fail as soon as any invocation of the function fails).
+ */
+fun <TInput, TOutput> scriptedFunction(vararg scriptedCalls: Pair<TInput, TOutput>): (TInput) -> TOutput {
+    var numCalls = 0
+    return {
+        if (numCalls >= scriptedCalls.size) fail("Unexpected call to exhausted scripted function (argument: $it)")
+        val (expectedArgument, mockResult) = scriptedCalls[numCalls++]
+        assertEquals(expectedArgument, it, "Unexpected argument passed to scripted function")
+        mockResult
+    }
+}
 
 /**
  * Instances of this class can serve as functions from [TInput] to [TOutput] (either directly, or, when needed, through
