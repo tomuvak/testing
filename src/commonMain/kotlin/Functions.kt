@@ -86,3 +86,31 @@ class SimpleMockFunction<TInput, TOutput>(var returnValue: TOutput) {
     val calls: MutableList<TInput> get() = underlying.calls
     operator fun invoke(argument: TInput): TOutput = underlying(argument)
 }
+
+/**
+ * Asserts that calling the given [delegator] with the given [argument] invokes the receiver [SimpleMockFunction] object
+ * [this] with the same argument and returns its `returnValue`.
+ */
+fun <TInput, TOutput> SimpleMockFunction<TInput, TOutput>.assertDelegation(
+    delegator: (TInput) -> TOutput,
+    argument: TInput,
+) {
+    val priorCalls = calls.toList()
+    val numPriorCalls = priorCalls.size
+
+    val actualResult = delegator(argument)
+
+    check(calls.take(numPriorCalls) == priorCalls) {
+        "Should never happen under normal circumstances:\nPrior calls: $priorCalls\nCurrent calls: $calls"
+    }
+
+    val numCalls = calls.size
+    assertGreaterThan(numPriorCalls, numCalls, "Mock was not called")
+
+    val relevantCalls = calls.subList(numPriorCalls, numCalls)
+    val numRelevantCalls = relevantCalls.size
+    assertEquals(1, numRelevantCalls, "Mock was called $numRelevantCalls times (arguments: $relevantCalls)")
+
+    assertEquals(argument, relevantCalls[0], "Mock was called with wrong argument")
+    assertEquals(returnValue, actualResult, "Delegator returned different result")
+}

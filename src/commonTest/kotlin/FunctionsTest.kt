@@ -107,6 +107,67 @@ class FunctionsTest {
         verify(0, "xyz")
     }
 
+    @Test fun assertDelegationSucceeds() {
+        val mock = SimpleMockFunction<Int, _>("return value")
+        val delegator: (Int) -> String = { mock(it) }
+        mock.assertDelegation(delegator, 3)
+
+        mock.returnValue = "another return value"
+        mock.assertDelegation(delegator, 7)
+
+        mock.returnValue = "yet another return value"
+        mock.assertDelegation(delegator, -5)
+    }
+    @Test fun assertDelegationFailsWhenDoesntCallDelegatee() {
+        val mock = SimpleMockFunction<Int, _>("asdfg")
+        val delegator: (Int) -> String = { "asdfg" } // happens to return the same value, without actually calling mock
+        thenFailsWith("not", "call") { mock.assertDelegation(delegator, 3) }
+
+        // Make sure calling the mock outside assertDelegation doesn't count:
+        mock(5)
+        thenFailsWith("not", "call") { mock.assertDelegation(delegator, 7) }
+    }
+    @Test fun assertDelegationFailsWhenCallsDelegateeMoreThanOnce() {
+        val mock = SimpleMockFunction<Int, _>("asdfg")
+        val delegator: (Int) -> String = {
+            mock(it)
+            mock(it)
+        }
+        thenFailsWith(2, "3, 3") { mock.assertDelegation(delegator, 3) }
+    }
+    @Test fun assertDelegationFailsWhenCallsDelegateeWithWrongArgument() {
+        val mock = SimpleMockFunction<Int, _>("asdfg")
+        val delegator: (Int) -> String = { mock(it + 1) }
+        thenFailsWith("wrong argument", 3, 4) { mock.assertDelegation(delegator, 3) }
+    }
+    @Test fun assertDelegationFailsWhenWrongResult() {
+        val mock = SimpleMockFunction<Int, _>("asdfg")
+        val delegator: (Int) -> String = {
+            mock(it)
+            "Called delegatee, but returning some other result :P"
+        }
+        thenFailsWith("different result", "asdfg", ":P") { mock.assertDelegation(delegator, 3) }
+    }
+    @Test fun assertDelegationKeepsOriginalMockBehavior() {
+        val mock = SimpleMockFunction<Int, _>("asdfg")
+        mock.calls.addAll(listOf(1, 2, 3))
+        for (delegator in listOf<(Int) -> String>(
+            { mock(it) },
+            { "No call to delegatee" },
+            {
+                mock(it)
+                mock(it)
+            },
+            { mock(it + 1) },
+            {
+                mock(it)
+                "Called delegatee, but returning some other result :P"
+            }
+        )) kotlin.runCatching { mock.assertDelegation(delegator, 5) }
+        assertEquals("asdfg", mock.returnValue)
+        assertEquals(listOf(1, 2, 3, 5, 5, 5, 6, 5), mock.calls)
+    }
+
     private fun thenFailsWith(vararg messageParts: Any?, block: () -> Unit) =
         assertFailsWithTypeAndMessageContaining<AssertionError>(*messageParts, block=block)
 }
