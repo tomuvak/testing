@@ -1,4 +1,4 @@
-name: Check on push
+name: Build & tests
 on: push
 jobs:
   check-on-push:
