@@ -83,6 +83,30 @@ class FunctionsTest {
         verify(0, "xyz")
     }
 
+    @Test fun simpleMockFunction() {
+        var expectedResult = ""
+        val mock = SimpleMockFunction<Int, String>(expectedResult)
+
+        fun verify(argument: Int, result: String?) {
+            val originalRecordedCalls = mock.calls.toList()
+            if (result != null) {
+                expectedResult = result
+                mock.returnValue = result
+            }
+            assertEquals(expectedResult, mock(argument))
+            assertEquals(originalRecordedCalls + argument, mock.calls)
+        }
+
+        assertEquals(emptyList(), mock.calls)
+        verify(10, null)
+        verify(3, "abc")
+        verify(-7, "asdfg")
+        verify(5, null)
+        verify(8, null)
+        verify(20, "")
+        verify(0, "xyz")
+    }
+
     private fun thenFailsWith(vararg messageParts: Any?, block: () -> Unit) =
         assertFailsWithTypeAndMessageContaining<AssertionError>(*messageParts, block=block)
 }

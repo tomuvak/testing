@@ -61,6 +61,9 @@ fun <TInput, TOutput> scriptedFunction(vararg scriptedCalls: Pair<TInput, TOutpu
  * Instances of this class can serve as functions from [TInput] to [TOutput] (either directly, or, when needed, through
  * their [invoke] function). The actual function which gets executed and whose return value is returned is [function].
  * Each invocation adds the argument passed to it to [calls].
+ *
+ * When no further action is needed other than recording the calls and returning a value, [SimpleMockFunction] may
+ * suffice.
  */
 class MockFunction<TInput, TOutput>(var function: (TInput) -> TOutput) {
     val calls: MutableList<TInput> = mutableListOf()
@@ -69,4 +72,17 @@ class MockFunction<TInput, TOutput>(var function: (TInput) -> TOutput) {
         calls.add(argument)
         return function(argument)
     }
+}
+
+/**
+ * Instances of this class can serve as functions from [TInput] to [TOutput] (either directly, or, when needed, through
+ * their [invoke] function). Each invocation adds the argument passed to it to [calls], and returns [returnValue].
+ *
+ * When it is desired for invocations to have additional side effects and/or more complicated logic, [MockFunction] can
+ * be used instead.
+ */
+class SimpleMockFunction<TInput, TOutput>(var returnValue: TOutput) {
+    private val underlying: MockFunction<TInput, TOutput> = MockFunction { returnValue }
+    val calls: MutableList<TInput> get() = underlying.calls
+    operator fun invoke(argument: TInput): TOutput = underlying(argument)
 }
