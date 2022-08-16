@@ -6,12 +6,12 @@ import kotlin.test.fail
 /**
  * A nullary function which asserts it's never actually called.
  */
-val mootProvider: () -> Nothing = { fail("Not supposed to actually be called") }
+val mootProvider: () -> Nothing = { fail("Moot provider not supposed to actually be called") }
 
 /**
  * A unary function which asserts it's never actually called.
  */
-val mootFunction: (Any?) -> Nothing = { fail("Not supposed to actually be called") }
+val mootFunction: (Any?) -> Nothing = { fail("Moot function not supposed to actually be called, called with $it") }
 
 /**
  * Returns a function which yields the [scriptedReturnValues], in order, in successive invocations, and throws if called
