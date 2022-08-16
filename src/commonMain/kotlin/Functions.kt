@@ -14,6 +14,27 @@ val mootProvider: () -> Nothing = { fail("Moot provider not supposed to actually
 val mootFunction: (Any?) -> Nothing = { fail("Moot function not supposed to actually be called, called with $it") }
 
 /**
+ * A binary function which asserts it's never actually called.
+ */
+val mootFunction2: (Any?, Any?) -> Nothing = { x, y ->
+    fail("Moot function not supposed to actually be called, called with $x, $y")
+}
+
+/**
+ * A ternary function which asserts it's never actually called.
+ */
+val mootFunction3: (Any?, Any?, Any?) -> Nothing = { x, y, z ->
+    fail("Moot function not supposed to actually be called, called with $x, $y, $z")
+}
+
+/**
+ * A quaternary function which asserts it's never actually called.
+ */
+val mootFunction4: (Any?, Any?, Any?, Any?) -> Nothing = { w, x, y, z ->
+    fail("Moot function not supposed to actually be called, called with $w, $x, $y, $z")
+}
+
+/**
  * Returns a function which yields the [scriptedReturnValues], in order, in successive invocations, and throws if called
  * again after all [scriptedReturnValues] have been exhausted.
  *

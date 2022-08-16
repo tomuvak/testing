@@ -5,8 +5,14 @@ import kotlin.test.assertEquals
 
 class FunctionsTest {
     @Test fun mootProviderFails() = thenFailsWith("oot provider", "ot supposed", "be called") { mootProvider() }
-
     @Test fun mootFunctionFails() = thenFailsWith("oot function", "ot supposed", "be called", 3) { mootFunction(3) }
+    @Test fun mootFunction2Fails() =
+        thenFailsWith("oot function", "ot supposed", "be called", 3, "xyz") { mootFunction2(3, "xyz") }
+    @Test fun mootFunction3Fails() =
+        thenFailsWith("oot function", "ot supposed", "be called", 3, "xyz", "true") { mootFunction3(3, "xyz", "true") }
+    @Test fun mootFunction4Fails() = thenFailsWith("oot function", "ot supposed", "be called", 3, "xyz", "true", 2.4) {
+        mootFunction4(3, "xyz", "true", 2.4)
+    }
 
     @Test fun scriptedProviderObeysScript() {
         val f1 = scriptedProvider("xy")
