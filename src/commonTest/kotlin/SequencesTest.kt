@@ -214,14 +214,12 @@ class SequencesTest {
         failure.assertMessageContains("operation failed")
     }
     @Test fun testLazyIntermediateOperationFailsWhenOperationEnumeratesSequenceTooFar() =
-        assertIs<AssertionError>(assertFailsWith<AssertionError> {
+        thenFailsForEnumeratingTooFar {
             sequenceOf(1, 2, 3).testLazyIntermediateOperation<_, String>({
-                val iterator = iterator()
-                iterator.asSequence().assertStartsWith(1, 2, 3)
-                iterator.hasNext()
+                whenEnumeratingTooFar(1, 2, 3)
                 error("Not supposed to reach here")
             }) {}
-        }.cause).assertMessageContains("enumerated thus far")
+        }
     @Test fun testLazyIntermediateOperationFailsWhenTestFails() {
         val testFailure = Exception("Failure in test")
         val failure = assertFailsWith<AssertionError> {
@@ -230,14 +228,11 @@ class SequencesTest {
         assertSame(testFailure, failure.cause)
         failure.assertMessageContains("failed to pass the test")
     }
-    @Test fun testLazyIntermediateOperationFailsWhenTestEnumeratesSequenceTooFar() =
-        assertIs<AssertionError>(assertFailsWith<AssertionError> {
-            sequenceOf(1, 2, 3).testLazyIntermediateOperation({ map { it.toString() } }) {
-                val iterator = iterator()
-                iterator.asSequence().assertStartsWith("1", "2", "3")
-                iterator.hasNext()
-            }
-        }.cause).assertMessageContains("enumerated thus far")
+    @Test fun testLazyIntermediateOperationFailsWhenTestEnumeratesSequenceTooFar() = thenFailsForEnumeratingTooFar {
+        sequenceOf(1, 2, 3).testLazyIntermediateOperation({ map { it.toString() } }) {
+            whenEnumeratingTooFar("1", "2", "3")
+        }
+    }
     @Test fun testLazyIntermediateOperationFailsWhenTestFailsOnSecondIteration() {
         var secondTestFailure: Throwable? = null
         val failure = assertFailsWith<AssertionError> {
@@ -251,17 +246,13 @@ class SequencesTest {
     }
     @Test fun testLazyIntermediateOperationFailsWhenTestEnumeratesSequenceTooFarOnSecondIteration() {
         var numIterations = 0
-        assertIs<AssertionError>(assertFailsWith<AssertionError> {
+        thenFailsForEnumeratingTooFar {
             sequenceOf(1, 2, 3).testLazyIntermediateOperation({ map { it.toString() } }) {
-                if (++numIterations == 2) {
-                    val iterator = iterator()
-                    iterator.asSequence().assertStartsWith("1", "2", "3")
-                    iterator.hasNext()
-                } else
-                    // an actual test would iterate over the result (preventing reiteration if constrained-once)
-                    iterator()
+                if (++numIterations == 2) { whenEnumeratingTooFar("1", "2", "3") }
+                // an actual test would iterate over the result (preventing reiteration if constrained-once)
+                else iterator()
             }
-        }.cause).assertMessageContains("enumerated thus far")
+        }
     }
     @Test fun testLazyIntermediateOperationFailsWhenOperationFailsOnConstrainedOnceSequence() {
         val failure = assertFailsWith<AssertionError> {
@@ -355,14 +346,9 @@ class SequencesTest {
         assertSame(operationFailure, failure.cause)
         failure.assertMessageContains("operation failed")
     }
-    @Test fun testLazyTerminalOperationFailsWhenOperationEnumeratesSequenceTooFar() =
-        assertIs<AssertionError>(assertFailsWith<AssertionError> {
-            sequenceOf(1, 2, 3).testLazyTerminalOperation({
-                val iterator = iterator()
-                iterator.asSequence().assertStartsWith(1, 2, 3)
-                iterator.hasNext()
-            })
-        }.cause).assertMessageContains("enumerated thus far")
+    @Test fun testLazyTerminalOperationFailsWhenOperationEnumeratesSequenceTooFar() = thenFailsForEnumeratingTooFar {
+        sequenceOf(1, 2, 3).testLazyTerminalOperation({ whenEnumeratingTooFar(1, 2, 3) })
+    }
     @Test fun testLazyTerminalOperationFailsWhenTestFails() {
         val testFailure = Exception("Failure in test")
         val failure = assertFailsWith<AssertionError> {
@@ -371,14 +357,9 @@ class SequencesTest {
         assertSame(testFailure, failure.cause)
         failure.assertMessageContains("failed to pass the test")
     }
-    @Test fun testLazyTerminalOperationFailsWhenTestEnumeratesSequenceTooFar() =
-        assertIs<AssertionError>(assertFailsWith<AssertionError> {
-            sequenceOf(1, 2, 3).testLazyTerminalOperation({ this }) {
-                val iterator = it.iterator()
-                iterator.asSequence().assertStartsWith(1, 2, 3)
-                iterator.hasNext()
-            }
-        }.cause).assertMessageContains("enumerated thus far")
+    @Test fun testLazyTerminalOperationFailsWhenTestEnumeratesSequenceTooFar() = thenFailsForEnumeratingTooFar {
+        sequenceOf(1, 2, 3).testLazyTerminalOperation({ this }) { it.whenEnumeratingTooFar(1, 2, 3) }
+    }
     @Test fun testLazyTerminalOperationTestsAndPasses() {
         val originalSequence = sequenceOf(1, 2, 3)
         val result = "result"
@@ -399,6 +380,16 @@ class SequencesTest {
         assertEquals(1, numTestIterations)
     }
 
+    private fun <T> Sequence<T>.whenEnumeratingTooFar(vararg expectedElements: T) {
+        val iterator = iterator()
+        iterator.asSequence().assertStartsWith(*expectedElements)
+        iterator.hasNext() // should fail for enumerating too far if sequence is capped after the given expectedElements
+    }
+
     private fun thenFails(vararg messageParts: Any?, block: () -> Unit) =
         assertFailsWithTypeAndMessageContaining<AssertionError>(*messageParts, block=block)
+
+    private fun thenFailsForEnumeratingTooFar(block: () -> Unit) = assertIs<AssertionError>(
+        assertFailsWith<AssertionError>(block=block).cause
+    ).assertMessageContains("enumerated thus far")
 }
