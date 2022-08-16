@@ -213,6 +213,15 @@ class SequencesTest {
         assertSame(operationFailure, failure.cause)
         failure.assertMessageContains("operation failed")
     }
+    @Test fun testLazyIntermediateOperationFailsWhenOperationEnumeratesSequenceTooFar() =
+        assertIs<AssertionError>(assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testLazyIntermediateOperation<_, String>({
+                val iterator = iterator()
+                iterator.asSequence().assertStartsWith(1, 2, 3)
+                iterator.hasNext()
+                error("Not supposed to reach here")
+            }) {}
+        }.cause).assertMessageContains("enumerated thus far")
     @Test fun testLazyIntermediateOperationFailsWhenTestFails() {
         val testFailure = Exception("Failure in test")
         val failure = assertFailsWith<AssertionError> {
@@ -221,6 +230,14 @@ class SequencesTest {
         assertSame(testFailure, failure.cause)
         failure.assertMessageContains("failed to pass the test")
     }
+    @Test fun testLazyIntermediateOperationFailsWhenTestEnumeratesSequenceTooFar() =
+        assertIs<AssertionError>(assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testLazyIntermediateOperation({ map { it.toString() } }) {
+                val iterator = iterator()
+                iterator.asSequence().assertStartsWith("1", "2", "3")
+                iterator.hasNext()
+            }
+        }.cause).assertMessageContains("enumerated thus far")
     @Test fun testLazyIntermediateOperationFailsWhenTestFailsOnSecondIteration() {
         var secondTestFailure: Throwable? = null
         val failure = assertFailsWith<AssertionError> {
@@ -231,6 +248,20 @@ class SequencesTest {
         }
         assertSame(secondTestFailure, failure.cause)
         failure.assertMessageContains("on second iteration")
+    }
+    @Test fun testLazyIntermediateOperationFailsWhenTestEnumeratesSequenceTooFarOnSecondIteration() {
+        var numIterations = 0
+        assertIs<AssertionError>(assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testLazyIntermediateOperation({ map { it.toString() } }) {
+                if (++numIterations == 2) {
+                    val iterator = iterator()
+                    iterator.asSequence().assertStartsWith("1", "2", "3")
+                    iterator.hasNext()
+                } else
+                    // an actual test would iterate over the result (preventing reiteration if constrained-once)
+                    iterator()
+            }
+        }.cause).assertMessageContains("enumerated thus far")
     }
     @Test fun testLazyIntermediateOperationFailsWhenOperationFailsOnConstrainedOnceSequence() {
         val failure = assertFailsWith<AssertionError> {
@@ -324,6 +355,14 @@ class SequencesTest {
         assertSame(operationFailure, failure.cause)
         failure.assertMessageContains("operation failed")
     }
+    @Test fun testLazyTerminalOperationFailsWhenOperationEnumeratesSequenceTooFar() =
+        assertIs<AssertionError>(assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testLazyTerminalOperation({
+                val iterator = iterator()
+                iterator.asSequence().assertStartsWith(1, 2, 3)
+                iterator.hasNext()
+            })
+        }.cause).assertMessageContains("enumerated thus far")
     @Test fun testLazyTerminalOperationFailsWhenTestFails() {
         val testFailure = Exception("Failure in test")
         val failure = assertFailsWith<AssertionError> {
@@ -332,6 +371,14 @@ class SequencesTest {
         assertSame(testFailure, failure.cause)
         failure.assertMessageContains("failed to pass the test")
     }
+    @Test fun testLazyTerminalOperationFailsWhenTestEnumeratesSequenceTooFar() =
+        assertIs<AssertionError>(assertFailsWith<AssertionError> {
+            sequenceOf(1, 2, 3).testLazyTerminalOperation({ this }) {
+                val iterator = it.iterator()
+                iterator.asSequence().assertStartsWith(1, 2, 3)
+                iterator.hasNext()
+            }
+        }.cause).assertMessageContains("enumerated thus far")
     @Test fun testLazyTerminalOperationTestsAndPasses() {
         val originalSequence = sequenceOf(1, 2, 3)
         val result = "result"
