@@ -30,6 +30,22 @@ fun <T> Sequence<T>.assertValues(vararg expectedValues: T) {
 }
 
 /**
+ * Return a sequence which yields the exact same elements as the receiver sequence [this], but throws an
+ * [AssertionError] upon any attempt to enumerate the sequence further (including merely checking whether there are
+ * further elements). Useful in asserting certain operations on a given sequence don't enumerate it further than
+ * expected.
+ */
+fun <T> Sequence<T>.capEnumeration(): Sequence<T> = Sequence { CappedIterator(iterator()) }
+
+private class CappedIterator<T>(private val source: Iterator<T>): Iterator<T> {
+    override fun hasNext(): Boolean = source.hasNext() || throw AssertionError("Not supposed to be enumerated thus far")
+    override fun next(): T {
+        hasNext()
+        return source.next()
+    }
+}
+
+/**
  * Verifies that the sequence obtained by running the given "intermediate" [operation] passes the given [test] block.
  *
  * Also verifies (non-)reiterability is preserved. Specifically, the receiver sequence [this] is expected to be
@@ -116,8 +132,3 @@ fun <T, R> Sequence<T>.testTerminalOperation(operation: Sequence<T>.() -> R, tes
  */
 fun <T, R> Sequence<T>.testLazyTerminalOperation(operation: Sequence<T>.() -> R, test: (R) -> Unit = {}) =
     capEnumeration().testTerminalOperation(operation, test)
-
-private fun <T> Sequence<T>.capEnumeration(): Sequence<T> = sequence {
-    yieldAll(this@capEnumeration)
-    fail("Not supposed to be enumerated thus far")
-}

@@ -1,5 +1,6 @@
 package com.tomuvak.testing.assertions
 
+import kotlin.random.Random
 import kotlin.test.*
 
 class SequencesTest {
@@ -95,6 +96,37 @@ class SequencesTest {
         thenFailsWith(0) { sequenceOf(1, 2, 3).assertValues() }
         thenFailsWith(1) { sequenceOf(1, 2, 3).assertValues(1) }
         thenFailsWith(2) { sequenceOf(1, 2, 3).assertValues(1, 2) }
+    }
+
+    @Test fun capEnumeration() {
+        fun <T> test(vararg elements: T) {
+            val original = sequenceOf(*elements)
+
+            fun Iterator<T>.verify() {
+                asSequence().assertStartsWith(*elements)
+                if (Random.nextBoolean()) {
+                    assertFailsWith<AssertionError> { hasNext() }
+                    assertFailsWith<AssertionError> { next() }
+                } else {
+                    assertFailsWith<AssertionError> { next() }
+                    assertFailsWith<AssertionError> { hasNext() }
+                }
+            }
+
+            val capped = original.capEnumeration()
+            capped.iterator().verify()
+            capped.iterator().verify()
+
+            val constrainedOnceAndCapped = original.constrainOnce().capEnumeration()
+            constrainedOnceAndCapped.iterator().verify()
+            assertFailsWith<IllegalStateException> { constrainedOnceAndCapped.iterator() }
+        }
+
+        assertFails { Sequence<Int>(mootProvider).capEnumeration().iterator() }
+        test<Int>()
+        test(1)
+        test(1, 2)
+        test(1, 2, 3, 2, 1)
     }
 
     @Test fun testIntermediateOperationFailsWhenOperationFails() {
