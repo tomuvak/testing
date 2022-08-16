@@ -234,7 +234,7 @@ class SequencesTest {
         assertSame(secondTestFailure, failure.cause)
         failure.assertMessageContains("on second iteration")
     }
-    @Test fun testLazyIntermediateOperationsFailsWhenOperationFailsOnConstrainedOnceSequence() {
+    @Test fun testLazyIntermediateOperationFailsWhenOperationFailsOnConstrainedOnceSequence() {
         val failure = assertFailsWith<AssertionError> {
             sequenceOf(1, 2, 3).testLazyIntermediateOperation({
                 repeat(2) { iterator() }
