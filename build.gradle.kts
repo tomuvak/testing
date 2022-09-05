@@ -5,7 +5,7 @@ plugins {
     `maven-publish`
 }
 
-group = "com.tomuvak.testing-assertions"
+group = "com.tomuvak.testing"
 version = "0.0.7-SNAPSHOT"
 
 val localProperties = Properties()

@@ -1,4 +1,4 @@
-package com.tomuvak.testing.assertions
+package com.tomuvak.testing
 
 import kotlin.test.fail
 
